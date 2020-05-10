@@ -43,6 +43,9 @@ function( $scope, $rootScope, $http, $routeParams, $timeout, sounds ) {
 			$scope.table = response.table;
 			$scope.setButtons(response.buttons);
 			$scope.gameIsOn = response.table.gameIsOn;
+			$scope.playerCount = response.table.playersSeatedCount;
+			$scope.mySeat = response.seat;
+			$rootScope.sittingOnTable = $routeParams.tableId;
 			$rootScope.$digest();
 			$scope.$digest();
 		}

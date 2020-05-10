@@ -90,10 +90,12 @@ io.sockets.on('connection', function( socket ) {
 				// Add the room to the player's data
 				players[socket.id].room = tableId;
 			} else {
+				let table = players[socket.id].sittingOnTable;
 				callback({
 					'success': true,
-					'table': players[socket.id].sittingOnTable.public,
-					'buttons': players[socket.id].buttons
+					'table': (table) ? table.public : null,
+					'seat' : players[socket.id].seat,
+					'buttons': (table && players[socket.id].seat == table.public.activeSeat) ? players[socket.id].buttons : ''
 				});
 
 				players[socket.id].socket.emit('dealingCards', players[socket.id].cards);
@@ -118,15 +120,14 @@ io.sockets.on('connection', function( socket ) {
 	 */
 	//TODO allow player to reconnect
 	socket.on('disconnect', function() {
-		// If the socket points to a player object
-		// var table = getTable(socket);
-		// var player = players[socket.id];
-		// if (table && player) {
-		// 	// Remove the player from the seat
-		// 	players[socket.id].playerLeft();
-		// 	// Remove the player object from the players array
-		// 	delete players[socket.id];
-		// }
+		var table = getTable(socket);
+		var player = players[socket.id];
+		if (table && player) {
+			// // Remove the player from the seat
+			// players[socket.id].playerLeft();
+			// // Remove the player object from the players array
+			// delete players[socket.id];
+		}
 	});
 
 	/**
@@ -304,7 +305,7 @@ io.sockets.on('connection', function( socket ) {
 });
 
 var getTable = function (socket) {
-	table = players[socket.id].sittingOnTable;
+	table = (players[socket.id]) ? players[socket.id].sittingOnTable : null;
 	return (table && table.seats[table.public.activeSeat].socket.id === socket.id) ? table : null;
 }
 /**
