@@ -272,7 +272,8 @@ Table.prototype.actionToNextPlayer = function(seat) {
  * Method that starts the next phase of the round
  */
 Table.prototype.initializeNextPhase = function(noMoreBets) {
-	this.lastPlayerToAct = this.public.dealerSeat;
+	this.lastPlayerToAct = (this.seats[this.public.dealerSeat].public.inHand) ? this.public.dealerSeat : this.findPreviousPlayer(this.public.dealerSeat);
+
 	this.pot.addTableBets( this.seats );
 	this.public.biggestBet = 0;
 

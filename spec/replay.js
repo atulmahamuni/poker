@@ -38,7 +38,7 @@ var displayTable = function() {
 }
 
 async function processLineByLine() {
-    const fileStream = fs.createReadStream('../rrevents/fold line38  gives back more than in pot.rr');
+    const fileStream = fs.createReadStream('../rrevents/CheckForEver');
 
     const rl = readline.createInterface({
         input: fileStream,
