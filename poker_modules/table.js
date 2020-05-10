@@ -90,7 +90,8 @@ var Table = function( id, name, eventEmitter, seatsCount, bigBlind, smallBlind, 
 
 	if (name === "REPLAY") this.recordReplayEnabled = false;
 	if (this.recordReplayEnabled) {
-		fn = "./rrevents/Table" + (new Date().toISOString().replace(/:/, '-').split(/:/)[0]) + "\.rr";
+		fn = "./rrevents/Table" + id + (new Date().toISOString().replace(/:/, '-').split(/:/)[0]) + "\.rr";
+		console.log("rrevent:" + fn);
 		this.ws = fs.createWriteStream(fn);
 		this.ws.on('error', function(e) {
 			console.error(e);
