@@ -20,6 +20,7 @@ app.controller('LobbyController', ['$scope', '$rootScope', '$http', function( $s
 					$rootScope.totalChips = response.totalChips;
 					$scope.registerError = '';
 					$rootScope.$digest();
+					response.redirect();
 				}
 				else if( response.message ) {
 					$scope.registerError = response.message;

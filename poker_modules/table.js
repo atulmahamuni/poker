@@ -16,7 +16,7 @@ const fs = require('fs');
  * @param int 		minBuyIn (the minimum amount of chips that one can bring to the table)
  * @param bool 		privateTable (flag that shows whether the table will be shown in the lobby)
  */
-var Table = function( id, name, eventEmitter, seatsCount, bigBlind, smallBlind, maxBuyIn, minBuyIn, privateTable,
+var Table = function( id, name, eventEmitter, seatsCount, smallBlind, maxBuyIn, minBuyIn, privateTable,
 					  defaultActionTimeout, minBet, recordReplayEnabled ) {
 	// The table is not displayed in the lobby
 	this.privateTable = privateTable;
@@ -24,8 +24,16 @@ var Table = function( id, name, eventEmitter, seatsCount, bigBlind, smallBlind, 
 	//this.playersSittingInCount = 0;
 	// The number of players that currently hold cards in their hands
 	this.playersInHandCount = 0;
+	// The number of players that went all-in
+	this.playersAllIn = 0;
 	// Reference to the last player that will act in the current phase (originally the dealer, unless there are bets in the pot)
 	this.lastPlayerToAct = null;
+    // The small blind amount
+    this.smallBlind = smallBlind;
+    // Current small blind
+    this.currentSmall = 0;
+	// Increase blinds when this player is dealer
+    this.incBlindsSeat = null;
 	// The game has only two players
 	this.headsUp = false;
 	// References to all the player objects in the table, indexed by seat number
@@ -47,12 +55,6 @@ var Table = function( id, name, eventEmitter, seatsCount, bigBlind, smallBlind, 
 		seatsCount: seatsCount,
 		// The number of players that are currently seated
 		playersSeatedCount: 0,
-		// The number of players that went all-in
-		playersAllIn: 0,
-		// The big blind amount
-		bigBlind: bigBlind,
-		// The small blind amount
-		smallBlind: smallBlind,
 		// The minimum allowed buy in
 		minBuyIn: minBuyIn,
 		// The maximum allowed buy in
@@ -205,6 +207,16 @@ Table.prototype.initializeRound = function() {
 	if (!this.seats[this.public.dealerSeat]) {
 		this.public.dealerSeat = this.findNextPlayer(this.public.dealerSeat);
 	}
+    if (this.incBlindsSeat == null) {
+        this.incBlindsSeat = this.public.dealerSeat;
+    } else if (!this.seats[this.incBlindsSeat]) {
+        this.incBlindsSeat = this.findPreviousPlayer(this.incBlindsSeat);
+    }
+
+
+    if (this.incBlindsSeat == this.public.dealerSeat) {
+        this.currentSmall += this.smallBlind;
+    }
 
 	this.public.biggestBet = 0;
 
@@ -213,13 +225,13 @@ Table.prototype.initializeRound = function() {
 	if(!this.headsUp) {
 		this.public.activeSeat = this.findNextPlayer();
 	}
-	this.seats[this.public.activeSeat].bet(this.public.smallBlind);
+	this.seats[this.public.activeSeat].bet(this.currentSmall);
 	this.log(this.seats[this.public.activeSeat].public.name + ' posted the small blind', 'smallBlind');
 
 	//Post big blind
 	this.public.activeSeat = this.findNextPlayer();
 	this.lastPlayerToAct = this.public.activeSeat;
-	this.seats[this.public.activeSeat].bet(this.public.bigBlind);
+	this.seats[this.public.activeSeat].bet(this.currentSmall * 2);
 	this.log(this.seats[this.public.activeSeat].public.name + ' posted the big blind', 'bigBlind');
 
 	//this.public.activeSeat = this.findNextPlayer();
@@ -263,8 +275,16 @@ Table.prototype.actionToNextPlayer = function(seat) {
 	}
 
 	this.public.activeSeat = nextPlayer;
-	nplayer.sendButtons((this.public.biggestBet > nplayer.public.bet) ? (this.public.playersSeatedCount - this.playersAllIn == 1) ? 'Fold:Call' : 'Fold:Call:Raise' : 'Check:Raise');
-
+	let str = (this.public.biggestBet > nplayer.public.bet) ? (this.public.playersSeatedCount - this.playersAllIn == 1) ? 'Fold:Call' : 'Fold:Call:Raise' : 'Check:Raise'
+    if (nplayer.public.autoPlay) {
+        if (str.includes('Fold')) {
+            this.playerFolded();
+        } else {
+            this.playerChecked();
+        }
+    } else {
+        nplayer.sendButtons(str);
+    }
 	this.emitEvent( 'table-data', this.public );
 }
 
@@ -414,9 +434,10 @@ Table.prototype.playerSatOnTheTable = function( player, seat, chips ) {
 	this.log(this.seats[seat].public.name + ':sat in:' + seat + ':' + player.public.chipsInPlay, 'sat');
 };
 
-Table.prototype.otherPlayersAreAllIn = function() {
-	return this.playersAllIn >= this.public.playersSeatedCount-1;
-};
+//TODO remove code
+// Table.prototype.otherPlayersAreAllIn = function() {
+// 	return this.playersAllIn >= this.public.playersSeatedCount-1;
+// };
 
 /**
  * Method that makes the doubly linked list of players
@@ -436,17 +457,11 @@ Table.prototype.removeAllCardsFromPlay = function() {
  * Actions that should be taken when the round has ended
  */
 Table.prototype.endRound = function() {
-	// If there were any bets, they are added to the pot
-	//this.pot.addTableBets( this.seats );
-	// if( !this.pot.isEmpty() ) {
-	// 	var winnersSeat = this.findNextPlayer(0);
-	// 	this.pot.giveToWinner( this.seats[winnersSeat] );
-	// }
-
 	// Sitting out the players who don't have chips
 	for( i=0 ; i<this.public.seatsCount ; i++ ) {
 		if( this.seats[i] !== null && this.seats[i].public.chipsInPlay <=0 && this.seats[i].public.sittingIn ) {
 			this.seats[i].playerLeft(i);
+			this.currentSmall += this.smallBlind;
 		}
 	}
 

@@ -3,22 +3,22 @@
 		<div class="modal">
 			<form ng-submit="sitOnTheTable()">
 				<h1>{{table.name}}</h1>
-				<span class="table-requirements">Max buy-in {{table.maxBuyIn}}</span>
-				<span class="table-requirements">Min buy-in {{table.minBuyIn}}</span>
-				<span class="table-requirements">You have a total of {{$root.totalChips}} chips</span>
-				<span class="table-requirements error" ng-show="buyInError">{{buyInError}}</span>
+<!--				<span class="table-requirements">Max buy-in {{table.maxBuyIn}}</span>-->
+<!--				<span class="table-requirements">Min buy-in {{table.minBuyIn}}</span>-->
+<!--				<span class="table-requirements">You have a total of {{$root.totalChips}} chips</span>-->
+<!--				<span class="table-requirements error" ng-show="buyInError">{{buyInError}}</span>-->
 				<input class="input-left" type="number" ng-model="buyInAmount" ng-trim="true" required>
 				<input type="submit" value="Sit in">
 			</form>
 		</div>
 		<div id="curtain" ng-show="buyInModalVisible" ng-click="buyInModalVisible=false"></div>
 	</div>
+
 	<div id="table">
 		<div id="felt"></div>
 	</div>
 	<div class="row">
 		<div class="cell">
-			<a id="to-lobby" class="button" href="/" ng-show="!$root.sittingOnTable" ng-click="leaveRoom()">< Lobby</a>
 			<seat player="table.seats[0]" active-seat="table.activeSeat" dealer-seat="table.dealerSeat" my-seat="mySeat" my-cards="myCards" sitting-on-table="$root.sittingOnTable" show-buy-in-modal="showBuyInModal(seat)" notifications="notifications" seat-index="0" cell-number="0" class="top left"></seat>
 		</div>
 		<div class="cell">
@@ -75,16 +75,9 @@
 			<seat player="table.seats[5]" active-seat="table.activeSeat" dealer-seat="table.dealerSeat" my-seat="mySeat" my-cards="myCards" sitting-on-table="$root.sittingOnTable" show-buy-in-modal="showBuyInModal(seat)" notifications="notifications" seat-index="5" cell-number="5" class="bottom right"></seat>
 		</div>
 	</div>
+</div>
 	<div class="row controls">
-		<div class="chat-cell">
-			<div id="chat" ng-controller="ChatController">
-				<div id="messages"></div>
-				<form ng-submit="sendMessage()">
-					<input type="text" ng-model="messageText">
-					<input type="submit" value="↵">
-				</form>
-			</div>
-		</div>
+
 		<!--
 			Moved "start game" button to preexsting cell div because creation of new div for "start game" button
 			was pushing "raise" button off the control panel
@@ -96,7 +89,6 @@
 		<div class="cell">
 			<button class="control-button" ng-click="startGame()" ng-disabled="playerCount < 2" ng-show="!gameIsOn">Start Game</button>
 			<button class="control-button" ng-click="fold()" ng-show="showFold">Fold</button>
-
 		</div>
 		<div class="cell">
 			<button class="control-button" ng-click="check()" ng-show="showCheck">Check</button>
@@ -106,14 +98,22 @@
 			<button class="control-button" ng-click="raise()" ng-show="showRaise">Raise to {{raiseAmount}}</button>
 		</div>
 		<div class="slider-div" ng-show="showRaise">
-			<div class="raise-label">
-				Raise to
-			</div>
 			<input id="raise-slider" class="raise-slider" type="range" min="{{minRaise}}" max="{{maxRaise}}" ng-model="raiseAmount" step="{{raiseIncrement}}" >
+		</div>
+        <div class="cell">
+            <button class="control-button" ng-click="setAutoPlay()" ng-show="mySeat!=null">{{autoPlay}}</button>
+        </div>
+	</div>
+	<div class="chat-cell">
+		<div id="chat" ng-controller="ChatController">
+			<div id="messages"></div>
+			<form ng-submit="sendMessage()">
+				<input type="text" ng-model="messageText">
+				<input type="submit" value="↵">
+			</form>
 		</div>
 	</div>
 	<div id="zoom">
-		<br>
 		<a href={{url}} ng-disabled="isURLBlank()" target="_blank">Zoom:</a> <input type="text" size="100" ng-model="url">
 	</div>
 	<div id="audio">
@@ -123,4 +123,3 @@
 		<audio id="bet-sound" src="/audio/bet.wav" preload="auto"></audio>
 		<audio id="raise-sound" src="/audio/raise.wav" preload="auto"></audio>
 	</div>
-</div>

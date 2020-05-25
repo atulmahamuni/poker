@@ -45,8 +45,8 @@ app.get('/lobby-data', function( req, res ) {
 			lobbyTables[tableId].name = tables[tableId].public.name;
 			lobbyTables[tableId].seatsCount = tables[tableId].public.seatsCount;
 			lobbyTables[tableId].playersSeatedCount = tables[tableId].public.playersSeatedCount;
-			lobbyTables[tableId].bigBlind = tables[tableId].public.bigBlind;
-            lobbyTables[tableId].smallBlind = tables[tableId].public.smallBlind;
+			lobbyTables[tableId].bigBlind = tables[tableId].smallBlind * 2;
+            lobbyTables[tableId].smallBlind = tables[tableId].smallBlind;
             lobbyTables[tableId].defaultActionTimeout = tables[tableId].public.defaultActionTimeout;
             lobbyTables[tableId].minBet = tables[tableId].public.minBet;
 		}
@@ -123,24 +123,11 @@ io.sockets.on('connection', function( socket ) {
 		var table = getTable(socket);
 		var player = players[socket.id];
 		if (table && player) {
+			player.disconnected = true;
 			// // Remove the player from the seat
 			// players[socket.id].playerLeft();
 			// // Remove the player object from the players array
 			// delete players[socket.id];
-		}
-	});
-
-	/**
-	 * When a player leaves the table
-	 * @param function callback
-	 */
-	//TODO auto play
-	socket.on('autoPlay', function( callback ) {
-		// If the player was sitting on a table
-		if( typeof players[socket.id] !== 'undefined') {
-			// players[socket.id].playerLeft();
-			// Send the number of total chips back to the user
-			callback( { 'success': true, 'totalChips': players[socket.id].chips } );
 		}
 	});
 
@@ -151,13 +138,14 @@ io.sockets.on('connection', function( socket ) {
 	 */
 	socket.on('register', function( newScreenName, callback ) {
 		// If a new screen name is posted
+		var player = null;
 		if( typeof newScreenName !== 'undefined' ) {
 			var newScreenName = newScreenName.trim();
 			// If the new screen name is not an empty string
 			if( newScreenName && typeof players[socket.id] === 'undefined' ) {
 				var nameExists = false;
-				for( var i in players ) {
-					if( players[i].public.name && players[i].public.name == newScreenName ) {
+				for( player of players ) {
+					if( player.public.name && player.public.name == newScreenName ) {
 						nameExists = true;
 						break;
 					}
@@ -167,7 +155,12 @@ io.sockets.on('connection', function( socket ) {
 					players[socket.id] = new Player( socket, newScreenName, 1000 );
 					callback( { 'success': true, screenName: newScreenName, totalChips: players[socket.id].chips } );
 				} else {
-					callback( { 'success': false, 'message': 'This name is taken' } );
+					if (player.disconnected) {
+						players[socket.id] = player;
+						callback( { 'success': true, reconnect: true, screenName: newScreenName, totalChips: players[socket.id].chips } )
+					} else {
+						callback({'success': false, 'message': 'This name is taken'});
+					}
 				}
 			} else {
 				callback( { 'success': false, 'message': 'Please enter a screen name' } );
@@ -242,6 +235,23 @@ io.sockets.on('connection', function( socket ) {
 	 * When a player checks
 	 * @param function callback
 	 */
+	socket.on('autoPlay', function(callback){
+		var player = players[socket.id];
+		var table = (player) ? player.sittingOnTable : null;
+
+		if (table && player) {
+			player.public.autoPlay = !player.public.autoPlay;
+			callback( {
+				'success': true,
+				'autoPlay': player.public.autoPlay
+			});
+		}
+	});
+
+	/**
+	 * When a player checks
+	 * @param function callback
+	 */
 	socket.on('check', function(callback){
 		var table = getTable(socket);
 		var player = players[socket.id];
@@ -306,7 +316,7 @@ io.sockets.on('connection', function( socket ) {
 
 var getTable = function (socket) {
 	table = (players[socket.id]) ? players[socket.id].sittingOnTable : null;
-	return (table && table.seats[table.public.activeSeat].socket.id === socket.id) ? table : null;
+	return (table && table.public.activeSeat != null && table.seats[table.public.activeSeat].socket.id === socket.id) ? table : null;
 }
 /**
  * Event emitter function that will be sent to the table objects
@@ -342,7 +352,7 @@ fs.readFile('./config/config.json', 'utf-8', (err, data) => {
     var tableCount = 0;
     for (table of config.tables) {
         tables[tableCount] = new Table( tableCount, table.name, eventEmitter(tableCount), 
-            table.numPlayers, 2 * table.smallBlind, table.smallBlind, 
+            table.numPlayers, table.smallBlind,
             table.maxBuyIn, table.minBuyIn, table.isPrivate,
             table.defaultActionTimeout, table.minBet, table.recordReplayEnabled);
         tableCount++;

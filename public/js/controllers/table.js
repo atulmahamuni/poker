@@ -13,11 +13,12 @@ function( $scope, $rootScope, $http, $routeParams, $timeout, sounds ) {
 	$scope.table.dealerSeat = null;
 	$scope.myCards = ['', ''];
 	$scope.mySeat = null;
-	$rootScope.sittingOnTable = null;
+	$rootScope.sittingOnTable = false;
 	$scope.gameIsOn = false;
 	$scope.minBet = 0;
     $scope.playerCount = 0;
     $scope.defaultActionTimer = null;
+    $scope.autoPlay = "Turn  ON Auto Play"
 	var showingNotification = false;
 
 	// Existing listeners should be removed
@@ -30,7 +31,6 @@ function( $scope, $rootScope, $http, $routeParams, $timeout, sounds ) {
 	}).then(function( data, status, headers, config ) {
 		$scope.table = data.data.table;
 		$scope.buyInAmount = data.data.table.maxBuyIn;
-        // $scope.betAmount = data.data.table.bigBlind;
         $scope.defaultActionTimeout = data.data.table.defaultActionTimeout;
         $scope.minBet = data.data.table.minBet;
         $scope.gameIsOn = data.data.table.gameIsOn;
@@ -45,7 +45,7 @@ function( $scope, $rootScope, $http, $routeParams, $timeout, sounds ) {
 			$scope.gameIsOn = response.table.gameIsOn;
 			$scope.playerCount = response.table.playersSeatedCount;
 			$scope.mySeat = response.seat;
-			$rootScope.sittingOnTable = $routeParams.tableId;
+			$rootScope.sittingOnTable = true;
 			$rootScope.$digest();
 			$scope.$digest();
 		}
@@ -53,11 +53,6 @@ function( $scope, $rootScope, $http, $routeParams, $timeout, sounds ) {
 
 	$scope.isURLBlank = function() {
 		return ($scope.url === "");
-	}
-
-	//TODO handle auto fold
-	$scope.showAutoFoldButton = function() {
-		return $rootScope.sittingOnTable !== null && ( !$rootScope.sittingIn || $scope.actionState === "waiting" );
 	}
 
 	$scope.showBuyInModal = function( seat ) {
@@ -79,21 +74,22 @@ function( $scope, $rootScope, $http, $routeParams, $timeout, sounds ) {
 		}
 	}
 
-	$scope.getCardClass = function( seat, card ) {
-		if( $scope.mySeat === seat ) {
-			return $scope.myCards[card];
-		}
-		else if ( typeof $scope.table.seats !== 'undefined' && typeof $scope.table.seats[seat] !== 'undefined' && $scope.table.seats[seat] && typeof $scope.table.seats[seat].cards !== 'undefined' && typeof $scope.table.seats[seat].cards[card] !== 'undefined' ) {
-			return 'pokercard-' + $scope.table.seats[seat].cards[card];
-		}
-		else {
-			return 'pokercard-back';
-		}
-	}
-
-	$scope.seatOccupied = function( seat ) {
-		return !$rootScope.sittingOnTable || ( $scope.table.seats !== 'undefined' && typeof $scope.table.seats[seat] !== 'undefined' && $scope.table.seats[seat] && $scope.table.seats[seat].name && $scope.table.seats[seat].sittingIn);
-	}
+	// TODO remove this code seems redundant
+	// $scope.getCardClass = function( seat, card ) {
+	// 	if( $scope.mySeat === seat ) {
+	// 		return $scope.myCards[card];
+	// 	}
+	// 	else if ( typeof $scope.table.seats !== 'undefined' && typeof $scope.table.seats[seat] !== 'undefined' && $scope.table.seats[seat] && typeof $scope.table.seats[seat].cards !== 'undefined' && typeof $scope.table.seats[seat].cards[card] !== 'undefined' ) {
+	// 		return 'pokercard-' + $scope.table.seats[seat].cards[card];
+	// 	}
+	// 	else {
+	// 		return 'pokercard-back';
+	// 	}
+	// }
+	//
+	// $scope.seatOccupied = function( seat ) {
+	// 	return !$rootScope.sittingOnTable || ( $scope.table.seats !== 'undefined' && typeof $scope.table.seats[seat] !== 'undefined' && $scope.table.seats[seat] && $scope.table.seats[seat].name && $scope.table.seats[seat].sittingIn);
+	// }
 
 	// Leaving the socket room
 	$scope.leaveRoom = function() {
@@ -107,7 +103,7 @@ function( $scope, $rootScope, $http, $routeParams, $timeout, sounds ) {
 		socket.emit( 'sitOnTheTable', { 'seat': selectedSeat, 'tableId': $routeParams.tableId, 'chips': $scope.buyInAmount }, function( response ) {
 			if( response.success ){
 				$scope.buyInModalVisible = false;
-				$rootScope.sittingOnTable = $routeParams.tableId;
+				$rootScope.sittingOnTable = true;
 				$rootScope.sittingIn = true;
 				$scope.buyInError = null;
 				$scope.mySeat = selectedSeat;
@@ -122,16 +118,12 @@ function( $scope, $rootScope, $http, $routeParams, $timeout, sounds ) {
 		});
 	}
 
-	// Leave the table (not the room)
-	//TODO handle auto fold
-	$scope.autoFold = function() {
+	// Player has stepped out and requested auto play.
+	$scope.setAutoPlay = function() {
         $scope.clearDefaultActionTimer();
-		socket.emit( 'autoFold', function( response ) {
+		socket.emit( 'autoPlay', function( response ) {
 			if( response.success ) {
-				//$rootScope.sittingOnTable = null;
-				$rootScope.totalChips = response.totalChips;
-				$rootScope.sittingIn = false;
-				$scope.setButtons('');
+			    $scope.autoPlay = (response.autoPlay) ? "Turn OFF Auto Play" : "Turn  ON Auto Play";
 				$rootScope.$digest();
 				$scope.$digest();
 			}

@@ -20,7 +20,9 @@ var Player = function( socket, name, chips ) {
         // The cards the player is holding, made public at the showdown
         cards: [],
         // The amount the player has betted in the current round
-        bet: 0
+        bet: 0,
+        // Player has stepped out - auto play
+        autoPlay: false
 	};
 	this.buttons = '';
 	// The socket object of the user
@@ -31,6 +33,8 @@ var Player = function( socket, name, chips ) {
 	this.room = null;
 	// Is set to false if the player is not sitting on any tables, otherwise it's set to the table id
 	this.sittingOnTable = null;
+	// Session connected / disconnected
+    this.disconnected = false;
 	// The number of the seat of the table that the player is sitting
 	this.seat = null;
 	// The cards that the player is holding
@@ -116,17 +120,17 @@ Player.prototype.bet = function(amount) {
 
     let tp = this.sittingOnTable.public;
     tp.biggestBet = tp.biggestBet < amount ? amount : tp.biggestBet;
-    tp.playersAllIn += this.public.chipsInPlay == 0 ? 1 : 0;
+    if (this.public.chipsInPlay == 0) this.sittingOnTable.playersAllIn++;
     return amount;
 }
 
 /**
- * Add winnings. If the player had gone all in and won return 1.
+ * Add winnings. If the player had gone all in and won adjust players Allin count.
  * @param number amount
  */
 Player.prototype.wins = function(amount) {
+    if (this.public.chipsInPlay == 0) this.sittingOnTable.playersAllIn--;
     this.public.chipsInPlay += amount;
-    return (this.public.chipsInPlay == amount ? 1 : 0);
 }
 
 Player.prototype.inHand = function(checkHasChips) {

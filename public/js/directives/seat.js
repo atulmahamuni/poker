@@ -28,7 +28,7 @@ app.directive( 'seat', [function() {
 					return scope.myCards[card];
 				}
 				else if ( typeof scope.player !== 'undefined' && scope.player && scope.player.cards && scope.player.cards[card] ) {
-					return 'pokercard-' + scope.player.cards[card];
+					return 'pokercard-' + scope.player.cards[card]; //other player's hand to be shown at show down.
 				}
 				else {
 					return 'pokercard-back';
@@ -36,7 +36,7 @@ app.directive( 'seat', [function() {
 			}
 
 			scope.seatOccupied = function( seat ) {
-				return !scope.sittingOnTable || ( typeof scope.player !== 'undefinde' && scope.player && scope.player.name && scope.player.sittingIn);
+				return !scope.sittingOnTable || ( typeof scope.player !== 'undefined' && scope.player && scope.player.name && scope.player.sittingIn);
 			}
 		}
 	};
