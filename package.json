@@ -11,12 +11,14 @@
     "url": "https://github.com/atulmahamuni/poker"
   },
   "dependencies": {
-    "connect": "~3.3.3",
+    "connect": "^3.7.0",
     "express": "~3.4.7",
     "jade": "~1.7.0",
     "jest": "^25.3.0",
     "less": "~2.0.0",
     "less-middleware": "~1.0.4",
+    "mongodb": "^3.5.7",
+    "mongoose": "^5.9.16",
     "socket.io": "~1.2.0"
   },
   "jest": {

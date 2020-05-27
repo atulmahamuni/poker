@@ -15,7 +15,8 @@ app.use(express.bodyParser());
 app.use(app.router);
 app.use(lessMiddleware(__dirname + '/public'));
 app.use(express.static(path.join(__dirname, 'public')));
-
+const mongoose = require('mongoose')
+const TableModel = require("./public/js/db.js")
 // Development Only
 if ( 'development' == app.get('env') ) {
 	app.use( express.errorHandler() );
@@ -28,6 +29,13 @@ var eventEmitter = {};
 var port = process.env.PORT || 3000;
 server.listen(port);
 console.log('Listening on port ' + port);
+
+
+const uri = "mongodb+srv://rvaidun:p0ker123@poker-wixd3.mongodb.net/poker?retryWrites=true&w=majority";
+// const client = new MongoClient(uri, {useNewUrlParser: true, useUnifiedTopology: true})
+mongoose.connect(uri,{useNewUrlParser: true}, () => 
+	console.log("Connected to database")
+);
 
 // The lobby
 app.get('/', function( req, res ) {
@@ -225,6 +233,11 @@ io.sockets.on('connection', function( socket ) {
 		table = tables[data.tableId];
 		if( !table.public.gameIsOn && table.public.playersSeatedCount > 1 ) {
 			callback({'success': true});
+			const tableInstance = new TableModel({
+				_id: new mongoose.Types.ObjectId(),
+				table: table,
+			});
+			tableInstance.save()
 			table.startGame();
 		} else {
 				callback( { 'success': false, 'error': 'Need at least 2 players'} );
